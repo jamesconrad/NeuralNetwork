@@ -7,19 +7,9 @@ Layer::Layer(int nodeCount, int numInputs, LayerType type, ActivationFunction ac
 	layerType = type;
 	nodes = (Node*) new char[nodeCount * sizeof(Node)];
 
-	//ExtraData length should be 6, kernels, filters, convWidth, convStride, imgWidth
-	if (layerType == CONV && extraData != nullptr)
+	for (int i = 0; i < numNodes; i++)
 	{
-		int inRes = extraData[5] * extraData[5];
-		for (int i = 0; i < nodeCount; i++)
-			nodes[i] = Node(inRes, this, activationFunction, i, extraData);
-	}
-	else //if (layerType == FCL)
-	{
-		for (int i = 0; i < numNodes; i++)
-		{
-			nodes[i] = Node(numInputs, this, activationFunction, i, extraData);
-		}
+		nodes[i] = Node(numInputs, this, activationFunction, i, extraData);
 	}
 }
 
@@ -40,6 +30,14 @@ void Layer::Evaluate(float* inputs, int numInputs, float* outputValues, int* num
 		outputValues[i] = nodes[i].Evaluate(inputs, numInputs);
 	}
 	*numOutputs = numNodes;
+}
+
+void Layer::Backpropogate(float* target)
+{
+	for (int i = 0; i < numNodes; i++)
+	{
+		nodes[i].Backpropogate(target == nullptr ? 0 : target[i]);
+	}
 }
 
 char* LayerTypeString(LayerType t)

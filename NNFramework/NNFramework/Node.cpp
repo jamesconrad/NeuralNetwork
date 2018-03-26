@@ -1,7 +1,8 @@
 #include <math.h>
 #include <random>
-#include "Layer.h"
-#include "Node.h"
+#include "NeuralNetwork.h"
+//#include "Layer.h"
+//#include "Node.h"
 
 
 
@@ -16,42 +17,23 @@ Node::Node(int weightCounts, Layer* parentLayer, ActivationFunction activationFu
 	for (int i = 0; i < numWeights; i++)
 		weights[i] = ((float)rand() / RAND_MAX) * 2.f - 1.f;
 
-	links = new int[weightCounts];
-	for (int i = 0; i < numWeights; i++)
-		links[i] = i;
-
-	//ExtraData length should be 6, kernels, filters, convWidth, convStride, imgWidth
-	if (layerType == CONV && extraData != nullptr)
-	{
-		cWidth = extraData[3];
-		cStride = extraData[4];
-		inputWidth = extraData[5];
-	}
+	//links = new int[weightCounts];
+	//for (int i = 0; i < numWeights; i++)
+	//	links[i] = i;
 
 	actFunct = activationFunction;
-	bias = (float)rand() / RAND_MAX * 2.f - 1.f;
+	bias = 0;
+	//bias = (float)rand() / RAND_MAX * 2.f - 1.f;
 }
 
 
 float Node::Evaluate(float* inputs, int numInputs)
 {
-	if (layerType == FCL)
-	{
-		float sum = 0;
-		for (int i = 0; i < numInputs; i++)
-			sum += inputs[links[i]];
-		return lastEval = Activation(sum + bias);
-	}
-	else if (layerType == CONV)
-	{
-		int totalSteps = 0;
-		float* imgResult = new float[totalSteps];
-
-		float sum = 0;
-		for (int i = 0; i < numInputs; i++)
-			sum += inputs[links[i]];
-		return lastEval = Activation(sum + bias);
-	}
+	float sum = 0;
+	for (int i = 0; i < numInputs; i++)
+		sum += inputs[i];
+	lastSum = sum + bias;
+	return lastEval = Activation(sum + bias);
 }
 
 
@@ -84,6 +66,47 @@ float Node::DerivativeActivation(float x)
 		return 0.f;
 	default:
 		return 0.f;
+	}
+}
+
+float Node::Error(float target)
+{
+	return 0.5f * pow(target - lastEval, 2);
+}
+
+float Node::Backpropogate(float target)
+{
+	if (parent->next == NULL)
+	{
+		error = -(target - lastEval);
+		float outwrtnet = lastEval * (1 - lastEval);
+		float nodeDelta = error * outwrtnet;
+
+		for (int i = 0; i < numWeights; i++)
+		{
+			//how impactful was weight i - following the delta rule https://en.wikipedia.org/wiki/Delta_rule
+			float errorwrtweight = nodeDelta * parent->prev->nodes[i].lastEval;
+			weights[i] = weights[i] - LEARNING_RATE * errorwrtweight;
+		}
+		return error;
+	}
+	else
+	{
+		//calculate this nodes error
+		error = 0;
+		for (int i = 0; i < parent->next->numNodes; i++)//error = summation(nodeDelta * connectionWeight)
+			error += parent->next->nodes[i].error * parent->next->nodes[i].weights[id];
+
+		float outwrtnet = lastEval * (1 - lastEval);
+		float nodeDelta = error * outwrtnet;
+
+		for (int i = 0; i < numWeights; i++)
+		{
+			float errorweight = nodeDelta * (parent->prev != NULL ? parent->prev->nodes[i].lastEval : parent->nn->lastInput[i]);
+			weights[i] = weights[i] - LEARNING_RATE * errorweight;
+		}
+
+		return error;
 	}
 }
 
