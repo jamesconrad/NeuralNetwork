@@ -6,9 +6,10 @@ Layer::Layer(int nodeCount, int numInputs, LayerType type, ActivationFunction ac
 	numNodes = nodeCount;
 	layerType = type;
 	nodes = (Node*) new char[nodeCount * sizeof(Node)];
-
+	//nodes.reserve(nodeCount);
 	for (int i = 0; i < numNodes; i++)
 	{
+		//nodes.push_back(Node(numInputs, this, activationFunction, i, extraData));
 		nodes[i] = Node(numInputs, this, activationFunction, i, extraData);
 	}
 }

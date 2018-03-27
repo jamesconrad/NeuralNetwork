@@ -15,7 +15,6 @@ class Layer
 {
 public:
 	friend Node;
-	Layer();
 	Layer(int nodeCount, int numInputs,LayerType type, ActivationFunction activationFunction, int id, int* extraData);
 
 	//output values and numoutputs must be valid memroy
@@ -29,10 +28,17 @@ public:
 	Layer* prev;
 	Layer* next;
 	NeuralNetwork* nn;
+
+	void ReLink()
+	{
+		for (int i = 0; i < numNodes; i++)
+			nodes[i].parent = this;
+	}
+
 private:
 	int id;
 	int numNodes;
 	Node* nodes;
-	//std::vector<Node*> nodes;
+	//std::vector<Node> nodes;
 	LayerType layerType;
 };

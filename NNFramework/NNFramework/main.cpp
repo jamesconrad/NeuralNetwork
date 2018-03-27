@@ -17,6 +17,8 @@ void main()
 	//nn.InitLogging("nnstatelog.csv");
 	//nn.LogState(0, true, false);
 
+	nn.ReLinkPointers();
+	nn.LogState(0, false, true);
 	if (TRAIN_FROM_SCRATCH)
 	{
 		FILE* dataset;
@@ -67,18 +69,18 @@ void main()
 			else
 				printf("Incorrect!\n");
 
-			printf("[%.8f, ", output[0]);
+			printf("[%.4f, ", output[0]);
 			for (int i = 1; i < 9; i++)
-				printf("%.8f, ", output[i]);
-			printf("%.8f]\n", output[9]);
+				printf("%.4f, ", output[i]);
+			printf("%.4f]\n", output[9]);
 
-			nn.LogState(i, false, true);
+			//nn.LogState(i, false, true);
 
 			float actualResult[10] = {0.1f,0.1f,0.1f,0.1f,0.1f,0.1f,0.1f,0.1f,0.1f,0.1f};
 			actualResult[label] = 0.9f;
 
 			nn.BackProp(actualResult);
-			//if (i % 100 == 0)
+			//if (i % 1000 == 0)
 			//	nn.LogState(i, false, true);
 		}
 

@@ -14,15 +14,12 @@ Node::Node(int weightCounts, Layer* parentLayer, ActivationFunction activationFu
 	numWeights = weightCounts;
 	weights = new float[weightCounts];
 	//weights.resize(weightCounts);
-	srand(time(NULL));
 	for (int i = 0; i < numWeights; i++)
+	{
 		weights[i] = ((float)rand() / RAND_MAX) * 1.f;//2.f - 1.f;
 		//weights[i] = 0.5f;
-
-	//links = new int[weightCounts];
-	//for (int i = 0; i < numWeights; i++)
-	//	links[i] = i;
-
+		//printf("%g\n", weights[i]);
+	}
 	actFunct = activationFunction;
 	bias = 0;
 	//bias = (float)rand() / RAND_MAX * 2.f - 1.f;
@@ -31,11 +28,12 @@ Node::Node(int weightCounts, Layer* parentLayer, ActivationFunction activationFu
 
 float Node::Evaluate(float* inputs, int numInputs)
 {
+	//calculate sum of weights*inputs
 	float sum = 0;
 	for (int i = 0; i < numInputs; i++)
 		sum += inputs[i] * weights[i];
 	lastSum = sum + bias;
-	float t = lastEval = Activation(sum + bias);
+	float t = lastEval = Activation(sum + bias); //run the sum through the activation
 	return t;
 }
 
