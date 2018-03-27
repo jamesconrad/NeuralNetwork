@@ -9,9 +9,9 @@ void main()
 {
 	int lcount = 6;
 	LayerType ltype[6] = { FCL, FCL, FCL, FCL, FCL, FCL };
-	int ncount[6] = { 28*28,14*14*6,100*16,120,84,10};
-	//int ncount[6] = { 28 * 28, 10, 10, 10, 10, 10 };
-	ActivationFunction nfunc[6] = { TANH,TANH,TANH,TANH,TANH,TANH };
+	//int ncount[6] = { 28*28,14*14*6,100*16,120,84,10};
+	int ncount[6] = { 28 * 28, 10, 10, 10, 10, 10 };
+	ActivationFunction nfunc[6] = { SIGMOID,SIGMOID,SIGMOID,SIGMOID,SIGMOID,SIGMOID };
 	
 	NeuralNetwork nn(6, ltype, ncount, nfunc, 28*28);
 	//nn.InitLogging("nnstatelog.csv");
@@ -26,10 +26,10 @@ void main()
 
 		int resolution = 784;//we know the input is 28x28 and 60000 images
 
-		char image[1024];
+		unsigned char image[1024];
 		float input[784];
 		float output[10];
-		char label;
+		unsigned char label;
 		fread_s(image, 784, sizeof(int), 4, dataset);	//set start points to file data
 		fread_s(image, 784, sizeof(int), 2, labels);	//set start points to file data
 
@@ -59,7 +59,7 @@ void main()
 				}
 			}
 
-			printf("%i/60000 : %g%%\t%c:%c\t", i, (float)i / 60000.0f, '0' + prediction, '0' + label);
+			printf("%i/60000 : %g%%\t\t%c:%c\t", i, (float)i / 60000.0f * 100, '0' + prediction, '0' + label);
 			if (label == prediction)
 			{
 				printf("Correct!\n");
@@ -67,8 +67,15 @@ void main()
 			else
 				printf("Incorrect!\n");
 
-			float actualResult[10] = {0,0,0,0,0,0,0,0,0,0};
-			actualResult[label] = 1.0f;
+			printf("[%.8f, ", output[0]);
+			for (int i = 1; i < 9; i++)
+				printf("%.8f, ", output[i]);
+			printf("%.8f]\n", output[9]);
+
+			nn.LogState(i, false, true);
+
+			float actualResult[10] = {0.1f,0.1f,0.1f,0.1f,0.1f,0.1f,0.1f,0.1f,0.1f,0.1f};
+			actualResult[label] = 0.9f;
 
 			nn.BackProp(actualResult);
 			//if (i % 100 == 0)

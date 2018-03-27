@@ -1,10 +1,9 @@
 #include <math.h>
 #include <random>
 #include "NeuralNetwork.h"
+#include <time.h>
 //#include "Layer.h"
 //#include "Node.h"
-
-
 
 Node::Node(int weightCounts, Layer* parentLayer, ActivationFunction activationFunction, int idnum, int* extraData)
 {
@@ -14,8 +13,11 @@ Node::Node(int weightCounts, Layer* parentLayer, ActivationFunction activationFu
 
 	numWeights = weightCounts;
 	weights = new float[weightCounts];
+	//weights.resize(weightCounts);
+	srand(time(NULL));
 	for (int i = 0; i < numWeights; i++)
-		weights[i] = ((float)rand() / RAND_MAX) * 2.f - 1.f;
+		weights[i] = ((float)rand() / RAND_MAX) * 1.f;//2.f - 1.f;
+		//weights[i] = 0.5f;
 
 	//links = new int[weightCounts];
 	//for (int i = 0; i < numWeights; i++)
@@ -31,9 +33,10 @@ float Node::Evaluate(float* inputs, int numInputs)
 {
 	float sum = 0;
 	for (int i = 0; i < numInputs; i++)
-		sum += inputs[i];
+		sum += inputs[i] * weights[i];
 	lastSum = sum + bias;
-	return lastEval = Activation(sum + bias);
+	float t = lastEval = Activation(sum + bias);
+	return t;
 }
 
 
@@ -78,10 +81,10 @@ float Node::Backpropogate(float target)
 {
 	if (parent->next == NULL)
 	{
-		error = -(target - lastEval);
+		float targetwrtout = -(target - lastEval);
 		float outwrtnet = lastEval * (1 - lastEval);
-		float nodeDelta = error * outwrtnet;
-
+		float nodeDelta = targetwrtout * outwrtnet;
+		error = nodeDelta;
 		for (int i = 0; i < numWeights; i++)
 		{
 			//how impactful was weight i - following the delta rule https://en.wikipedia.org/wiki/Delta_rule
@@ -99,6 +102,7 @@ float Node::Backpropogate(float target)
 
 		float outwrtnet = lastEval * (1 - lastEval);
 		float nodeDelta = error * outwrtnet;
+		error = nodeDelta;
 
 		for (int i = 0; i < numWeights; i++)
 		{

@@ -1,6 +1,6 @@
 #pragma once
 #include <stdio.h>
-
+#include <vector>
 #define LEARNING_RATE 0.5f
 
 class Layer;
@@ -17,7 +17,7 @@ class Node
 {
 public:
 	friend Layer;
-	//cwidth offset in each direction from center, stride is current position
+
 	Node(int weightCounts, Layer* parentLayer, ActivationFunction activationFunction, int id, int* extraData);
 
 	float Evaluate(float* inputs, int numInputs);
@@ -34,9 +34,9 @@ private:
 	float bias = 0.f;
 	int numWeights;
 	float* weights;
+	//std::vector<float> weights;
 	float lastSum;
 	float error;
-	int* links;
 	float lastEval = -123.f;
 	Layer* parent;
 	LayerType layerType;

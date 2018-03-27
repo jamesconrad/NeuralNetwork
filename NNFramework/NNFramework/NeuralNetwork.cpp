@@ -30,14 +30,16 @@ int NeuralNetwork::FinalLayerOutputCount()
 void NeuralNetwork::Evaluate(float* inputs, int numInputs, float* outputValues)
 {
 	memcpy_s(lastInput, sizeof(float) * numInputs, inputs, sizeof(float) * numInputs);
-	delete _results[0];
-	delete _results[1];
+	//delete _results[0];
+	//delete _results[1];
 
 	_numOutputs[0] = layers[0]->GetNumOutputs();
 	_results[0] = new float[_numOutputs[0]];
 	_results[1] = new float[1];
 	layers[0]->Evaluate(inputs, numInputs, _results[0], &_numOutputs[0]);
 	
+	std::vector<float> r;
+
 	int index = 0;
 	int lastindex = 0;
 	for (int i = 1; i < numLayers; i++)
@@ -47,11 +49,14 @@ void NeuralNetwork::Evaluate(float* inputs, int numInputs, float* outputValues)
 		_numOutputs[index] = layers[i]->GetNumOutputs();
 		_results[index] = new float[_numOutputs[index]];//reallocate
 		layers[i]->Evaluate(_results[lastindex], _numOutputs[lastindex], _results[index], &_numOutputs[index]);//store results
-
+		r.resize(_numOutputs[index]);
+		layers[i]->Evaluate(_results[lastindex], _numOutputs[lastindex], r.data(), &_numOutputs[index]);
 		lastindex = index;//store index
 	}
 
 	memcpy_s(outputValues, _numOutputs[lastindex] * sizeof(float), _results[lastindex], _numOutputs[lastindex] * sizeof(float));
+	delete _results[0];
+	delete _results[1];
 	//outputValues = _results[lastindex];
 }
 
@@ -83,6 +88,6 @@ void NeuralNetwork::CloseLogging()
 
 void NeuralNetwork::LogState(int runId, bool toFile, bool toConsole)
 {
-	for (int i = 0; i < numLayers; i++)
+	for (int i = 1; i < numLayers; i++)
 		layers[i]->LogState(runId, toFile, toConsole, stateLog);
 }

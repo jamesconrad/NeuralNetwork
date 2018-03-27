@@ -24,6 +24,7 @@ private:
 	FILE* stateLog;
 	int numLayers;
 	Layer** layers;
+	//std::vector<Layer> layers;
 	float* lastInput;
 	//for evaluation calculations and returns
 	int _numOutputs[2];

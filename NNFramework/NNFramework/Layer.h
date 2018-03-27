@@ -4,8 +4,8 @@
 
 enum LayerType
 {
-	CONV,	//ExtraData length should be 4, depth, convWidth, convStride, imgWidth
-	FCL,	//ExtraData length should be 1, with no data elements.
+	CONV,
+	FCL,
 	POOL
 };
 
@@ -15,6 +15,7 @@ class Layer
 {
 public:
 	friend Node;
+	Layer();
 	Layer(int nodeCount, int numInputs,LayerType type, ActivationFunction activationFunction, int id, int* extraData);
 
 	//output values and numoutputs must be valid memroy
@@ -32,5 +33,6 @@ private:
 	int id;
 	int numNodes;
 	Node* nodes;
+	//std::vector<Node*> nodes;
 	LayerType layerType;
 };
