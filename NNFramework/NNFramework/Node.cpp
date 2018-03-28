@@ -16,13 +16,12 @@ Node::Node(int weightCounts, Layer* parentLayer, ActivationFunction activationFu
 	//weights.resize(weightCounts);
 	for (int i = 0; i < numWeights; i++)
 	{
-		weights[i] = ((float)rand() / RAND_MAX) * 1.f;//2.f - 1.f;
-		//weights[i] = 0.5f;
+		weights[i] = ((float)rand() / RAND_MAX) * 2.f - 1.f;
+		//weights[i] = 0.000001f + ((float)rand() / RAND_MAX) / 1000.f;
 		//printf("%g\n", weights[i]);
 	}
 	actFunct = activationFunction;
-	bias = 0;
-	//bias = (float)rand() / RAND_MAX * 2.f - 1.f;
+	bias = ((float)rand() / RAND_MAX) * 2.f - 1.f;
 }
 
 
@@ -33,8 +32,7 @@ float Node::Evaluate(float* inputs, int numInputs)
 	for (int i = 0; i < numInputs; i++)
 		sum += inputs[i] * weights[i];
 	lastSum = sum + bias;
-	float t = lastEval = Activation(sum + bias); //run the sum through the activation
-	return t;
+	return lastEval = Activation(lastSum); //run the sum through the activation
 }
 
 
@@ -43,7 +41,7 @@ float Node::Activation(float x)
 	switch (actFunct)
 	{
 	case SIGMOID:
-		return 1.f / (1.f + exp(x));
+		return x / (1.f + abs(x));
 	case TANH:
 		return tanh(x);
 	case RELU:
@@ -58,7 +56,7 @@ float Node::DerivativeActivation(float x)
 	switch (actFunct)
 	{
 	case SIGMOID: {
-		float fx = 1 / (1 + exp(x));
+		float fx = Activation(x);
 		return fx * (1 - fx); }
 	case TANH:
 		return 1 - pow(tanh(x), 2);
@@ -77,18 +75,29 @@ float Node::Error(float target)
 
 float Node::Backpropogate(float target)
 {
+	if (lastSum >= 2.f)
+		lastSum = 1.99999999999999999999f;
+	else if (lastSum <= -2.f)
+		lastSum = -1.99999999999999999999f;
 	if (parent->next == NULL)
 	{
+		
 		float targetwrtout = -(target - lastEval);
-		float outwrtnet = lastEval * (1 - lastEval);
+		//float outwrtnet = lastEval * (1 - lastEval);
+		float outwrtnet = DerivativeActivation(lastSum);
 		float nodeDelta = targetwrtout * outwrtnet;
-		error = nodeDelta;
 		for (int i = 0; i < numWeights; i++)
 		{
 			//how impactful was weight i - following the delta rule https://en.wikipedia.org/wiki/Delta_rule
 			float errorwrtweight = nodeDelta * parent->prev->nodes[i].lastEval;
 			weights[i] = weights[i] - LEARNING_RATE * errorwrtweight;
 		}
+
+
+		//do it for bias?
+		bias = bias - LEARNING_RATE * nodeDelta;
+
+		error = nodeDelta;
 		return error;
 	}
 	else
@@ -98,9 +107,9 @@ float Node::Backpropogate(float target)
 		for (int i = 0; i < parent->next->numNodes; i++)//error = summation(nodeDelta * connectionWeight)
 			error += parent->next->nodes[i].error * parent->next->nodes[i].weights[id];
 
-		float outwrtnet = lastEval * (1 - lastEval);
+		//float outwrtnet = lastEval * (1 - lastEval);
+		float outwrtnet = DerivativeActivation(lastSum);
 		float nodeDelta = error * outwrtnet;
-		error = nodeDelta;
 
 		for (int i = 0; i < numWeights; i++)
 		{
@@ -108,6 +117,11 @@ float Node::Backpropogate(float target)
 			weights[i] = weights[i] - LEARNING_RATE * errorweight;
 		}
 
+
+		//do it for bias?
+		bias = bias - LEARNING_RATE * nodeDelta;
+
+		error = nodeDelta;
 		return error;
 	}
 }

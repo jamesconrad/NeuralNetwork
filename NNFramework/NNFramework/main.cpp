@@ -4,99 +4,147 @@
 #define DATASET_FILEPATH "train-images.idx3-ubyte"
 #define LABELSET_FILEPATH "train-labels.idx1-ubyte"
 
+#define XOR false
 
 void main()
 {
-	int lcount = 6;
-	LayerType ltype[6] = { FCL, FCL, FCL, FCL, FCL, FCL };
-	//int ncount[6] = { 28*28,14*14*6,100*16,120,84,10};
-	int ncount[6] = { 28 * 28, 10, 10, 10, 10, 10 };
-	ActivationFunction nfunc[6] = { SIGMOID,SIGMOID,SIGMOID,SIGMOID,SIGMOID,SIGMOID };
-	
-	NeuralNetwork nn(6, ltype, ncount, nfunc, 28*28);
-	//nn.InitLogging("nnstatelog.csv");
-	//nn.LogState(0, true, false);
-
-	nn.ReLinkPointers();
-	nn.LogState(0, false, true);
-	if (TRAIN_FROM_SCRATCH)
+	if (!XOR)
 	{
-		FILE* dataset;
-		FILE* labels;
-		fopen_s(&dataset, DATASET_FILEPATH, "rb");
-		fopen_s(&labels, LABELSET_FILEPATH, "rb");
+		int lcount = 6;
+		LayerType ltype[6] = { FCL, FCL, FCL, FCL, FCL, FCL };
+		//int ncount[6] = { 28*28,14*14*6,100*16,120,84,10};
+		//int ncount[6] = { 28 * 28, 10, 10, 10, 10, 10 };
+		int ncount[6] = { 28 * 28, 728 / 2, 728 / 4, 120, 84, 10 };
+		ActivationFunction nfunc[6] = { TANH,TANH,TANH,TANH,TANH,TANH };
 
-		int resolution = 784;//we know the input is 28x28 and 60000 images
+		NeuralNetwork nn(6, ltype, ncount, nfunc, 28 * 28);
+		//nn.InitLogging("nnstatelog.csv");
+		//nn.LogState(0, true, false);
 
-		unsigned char image[1024];
-		float input[784];
-		float output[10];
-		unsigned char label;
-		fread_s(image, 784, sizeof(int), 4, dataset);	//set start points to file data
-		fread_s(image, 784, sizeof(int), 2, labels);	//set start points to file data
-
-		for (int i = 1; i < 60000; i++)
+		nn.ReLinkPointers();
+		//nn.LogState(0, false, true);
+		if (TRAIN_FROM_SCRATCH)
 		{
-			fread_s(image, 1024, 1, 784, dataset);
-			fread_s(&label, 1, 1, 1, labels);
-			for (int i = 0; i < 784; i++)
+			FILE* dataset;
+			FILE* labels;
+			fopen_s(&dataset, DATASET_FILEPATH, "rb");
+			fopen_s(&labels, LABELSET_FILEPATH, "rb");
+
+			int resolution = 784;//we know the input is 28x28 and 60000 images
+
+			unsigned char image[1024];
+			float input[784];
+			float output[10];
+			unsigned char label;
+			fread_s(image, 784, sizeof(int), 4, dataset);	//set start points to file data
+			fread_s(image, 784, sizeof(int), 2, labels);	//set start points to file data
+			int correct = 0;
+			for (int i = 1; i <= 60000; i++)
 			{
-				input[i] = (float)image[i] / 255.0f;
-				//printf("%c", input[i] > 0.66f ? 178 : input[i] > 0.33f ? 177 : input[i] > 0.0f ? 176 : ' ');
-				//if (i % 28 == 0)
-				//	printf("\n");
+				fread_s(image, 1024, 1, 784, dataset);
+				fread_s(&label, 1, 1, 1, labels);
+				for (int j = 0; j < 784; j++)
+				{
+					input[j] = (float)image[j] / 255.0f;
+					//printf("%c", input[i] > 0.66f ? 178 : input[i] > 0.33f ? 177 : input[i] > 0.0f ? 176 : ' ');
+					//if (i % 28 == 0)
+					//	printf("\n");
+				}
+
+				nn.Evaluate(input, 784, output);
+				//nn.LogState(1, true, false);
+				//nn.CloseLogging();
+				float max = output[0];
+				char prediction = 0;
+				for (int j = 0; j < 10; j++)
+				{
+					if (output[j] > max)
+					{
+						max = output[j];
+						prediction = j;
+					}
+				}
+
+				printf("%5i/60000 : %.4f%%   %c:%c  ", i, (float)i / 60000.0f * 100, '0' + prediction, '0' + label);
+				if (label == prediction)
+				{
+					printf("Correct   ");
+					if (i >= 60000 - 60000 / 10) correct++;
+				}
+				else
+					printf("Incorrect ");
+
+				printf("[%-+.3f, ", output[0]);
+				for (int i = 1; i < 9; i++)
+					printf("%-+.3f, ", output[i]);
+				printf("%-+.3f]\n", output[9]);
+
+				//nn.LogState(i, false, true);
+
+				float actualResult[10] = { 0.1f,0.1f,0.1f,0.1f,0.1f,0.1f,0.1f,0.1f,0.1f,0.1f };
+				actualResult[label] = 0.9f;
+
+				nn.BackProp(actualResult);
+				//if (i % 500 == 0)
+				//	nn.LogState(i, false, true);
 			}
 
-			nn.Evaluate(input, 784, output);
-			//nn.LogState(1, true, false);
-			//nn.CloseLogging();
-			float max = output[0];
-			char prediction = 0;
-			for (int i = 1; i < 10; i++)
+			printf("Training Complete! Final 10%% accuracy %g%%\n", correct / 60000 / 10);
+			nn.InitLogging("nnstatelog.csv");
+			nn.LogState(60000, true, false);
+			nn.CloseLogging();
+			printf("Exiting...\n");
+		}
+	}
+	else
+	{
+		int lcount = 3;
+		LayerType ltype[3] = { FCL, FCL, FCL };
+		int ncount[3] = { 2, 2, 1 };
+		ActivationFunction nfunc[3] = { TANH,TANH,TANH };
+
+		NeuralNetwork nn(3, ltype, ncount, nfunc, 2);
+		nn.ReLinkPointers();
+
+		float input[2];
+		bool binput[2];
+		float output[1];
+#define ITERATIONS 10000
+		int correct = 0;
+		for (int i = 1; i <= ITERATIONS; i++)
+		{
+			input[0] = (float)rand() / (float)RAND_MAX > 0.5 ? 0.9f : 0.1f; binput[0] = input[0] > 0.5 ? true : false;
+			input[1] = (float)rand() / (float)RAND_MAX <= 0.5 ? 0.9f : 0.1f; binput[1] = input[1] > 0.5 ? true : false;
+			nn.Evaluate(input, 2, output);
+
+			float actual = binput[0] != binput[1];
+			char* str = "Incorrect!";
+			if (actual)
 			{
-				if (output[i] > max)
+				if (output[0] >= 0.5)
 				{
-					max = output[i];
-					prediction = i;
+					str = "Correct!";
+					if (i >= (ITERATIONS - ITERATIONS / 10)) correct++;
+				}
+			}
+			else
+			{
+				if (output[0] < 0.5)
+				{
+					str = "Correct!";
+					if (i >= (ITERATIONS - ITERATIONS / 10)) correct++;
 				}
 			}
 
-			printf("%i/60000 : %g%%\t\t%c:%c\t", i, (float)i / 60000.0f * 100, '0' + prediction, '0' + label);
-			if (label == prediction)
-			{
-				printf("Correct!\n");
-			}
-			else
-				printf("Incorrect!\n");
-
-			printf("[%.4f, ", output[0]);
-			for (int i = 1; i < 9; i++)
-				printf("%.4f, ", output[i]);
-			printf("%.4f]\n", output[9]);
+			printf("%5i/%i : %.4f%%   %s\n", i, ITERATIONS, (float)i / (float)ITERATIONS * 100, str);
 
 			//nn.LogState(i, false, true);
-
-			float actualResult[10] = {0.1f,0.1f,0.1f,0.1f,0.1f,0.1f,0.1f,0.1f,0.1f,0.1f};
-			actualResult[label] = 0.9f;
-
+			float actualResult[1] = { actual ? 0.9f : 0.1f };
 			nn.BackProp(actualResult);
-			//if (i % 1000 == 0)
-			//	nn.LogState(i, false, true);
 		}
-
+		printf("Training Complete. Final 10%% accuracy %g%%\n", (float)correct / (ITERATIONS / 10) * 100);
+		//nn.LogState(99, false, true);
+		//nn.CloseLogging();*/
 	}
-
-	//float inputs[5] = { 0.f,1.f,0.2f,0.6f,0.1f };
-	//float* output = new float[nn.FinalLayerOutputCount()];
-	//nn.Evaluate(inputs, 5, output);
-	//
-	//nn.InitLogging("nnstatelog.csv");
-	////nn.LogState(0, true, true);
-	//for (int i = 1; i < 100; i++)
-	//{
-	//	nn.Evaluate(output, 3, output);
-	//	//nn.LogState(i, true, false);
-	//}
-	////nn.LogState(99, false, true);
-	//nn.CloseLogging();
+	return;
 }
