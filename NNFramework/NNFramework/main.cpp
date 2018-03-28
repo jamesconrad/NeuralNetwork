@@ -10,14 +10,14 @@ void main()
 {
 	if (!XOR)
 	{
-		int lcount = 6;
+		//int lcount = 6;
 		LayerType ltype[6] = { FCL, FCL, FCL, FCL, FCL, FCL };
 		//int ncount[6] = { 28*28,14*14*6,100*16,120,84,10};
 		//int ncount[6] = { 28 * 28, 10, 10, 10, 10, 10 };
-		int ncount[6] = { 28 * 28, 728 / 2, 728 / 4, 120, 84, 10 };
+		int ncount[6] = { 28 * 28, 10 };
 		ActivationFunction nfunc[6] = { TANH,TANH,TANH,TANH,TANH,TANH };
 
-		NeuralNetwork nn(6, ltype, ncount, nfunc, 28 * 28);
+		NeuralNetwork nn(2, ltype, ncount, nfunc, 28 * 28);
 		//nn.InitLogging("nnstatelog.csv");
 		//nn.LogState(0, true, false);
 
@@ -65,7 +65,7 @@ void main()
 					}
 				}
 
-				printf("%5i/60000 : %.4f%%   %c:%c  ", i, (float)i / 60000.0f * 100, '0' + prediction, '0' + label);
+				printf("%5i/60000 : %.4f%%  %c:%c  ", i, (float)i / 60000.0f * 100, '0' + prediction, '0' + label);
 				if (label == prediction)
 				{
 					printf("Correct   ");
@@ -89,7 +89,7 @@ void main()
 				//	nn.LogState(i, false, true);
 			}
 
-			printf("Training Complete! Final 10%% accuracy %g%%\n", correct / 60000 / 10);
+			printf("Training Complete! Final 10%% accuracy %g%%\n", correct / 6000.f * 100.f);
 			nn.InitLogging("nnstatelog.csv");
 			nn.LogState(60000, true, false);
 			nn.CloseLogging();

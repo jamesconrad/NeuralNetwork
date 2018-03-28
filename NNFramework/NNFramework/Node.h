@@ -1,7 +1,7 @@
 #pragma once
 #include <stdio.h>
 #include <vector>
-#define LEARNING_RATE 0.05f
+#define LEARNING_RATE 0.005f
 
 class Layer;
 enum LayerType;
