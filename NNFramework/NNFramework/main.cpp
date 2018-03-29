@@ -33,7 +33,7 @@ void main()
 		nn.ReLinkPointers();
 
 		//load weights from file
-		nn.LoadStateLog("nnstatelog.csv");
+		//nn.LoadStateLog("nnstatelog.csv");
 
 
 		if (TRAIN_FROM_SCRATCH)
@@ -62,8 +62,8 @@ void main()
 				{
 					input[j] = (float)image[j] / 255.0f;
 					//debug printing
-					//printf("%c", input[i] > 0.66f ? 178 : input[i] > 0.33f ? 177 : input[i] > 0.0f ? 176 : ' ');
-					//if (i % 28 == 0)
+					//printf("%c", input[j] > 0.66f ? 178 : input[j] > 0.33f ? 177 : input[j] > 0.0f ? 176 : ' ');
+					//if (j % 28 == 0)
 					//	printf("\n");
 				}
 

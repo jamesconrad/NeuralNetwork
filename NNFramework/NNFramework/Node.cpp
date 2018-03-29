@@ -1,26 +1,27 @@
 #include <math.h>
 #include <random>
 #include "NeuralNetwork.h"
-#include <time.h>
-//#include "Layer.h"
-//#include "Node.h"
+
+#define LEARNING_RATE 0.005f
 
 Node::Node(int weightCounts, Layer* parentLayer, ActivationFunction activationFunction, int idnum, int* extraData)
 {
 	id = idnum;
 	parent = parentLayer;
 	layerType = parentLayer->GetType();
+	actFunct = activationFunction;
 
+	//allocate weights array
 	numWeights = weightCounts;
 	weights = new float[weightCounts];
-	//weights.resize(weightCounts);
+	
 	for (int i = 0; i < numWeights; i++)
 	{
+		//set weight to a random value between -1 and 1
 		weights[i] = ((float)rand() / RAND_MAX) * 2.f - 1.f;
-		//weights[i] = 0.000001f + ((float)rand() / RAND_MAX) / 1000.f;
-		//printf("%g\n", weights[i]);
 	}
-	actFunct = activationFunction;
+
+	//set bias value between -1 and 1
 	bias = ((float)rand() / RAND_MAX) * 2.f - 1.f;
 }
 
@@ -32,7 +33,8 @@ float Node::Evaluate(float* inputs, int numInputs)
 	for (int i = 0; i < numInputs; i++)
 		sum += inputs[i] * weights[i];
 	lastSum = sum + bias;
-	return lastEval = Activation(lastSum); //run the sum through the activation
+	//run the sum through the activation function
+	return lastEval = Activation(lastSum);
 }
 
 
@@ -56,7 +58,7 @@ float Node::DerivativeActivation(float x)
 	switch (actFunct)
 	{
 	case SIGMOID: {
-		float fx = Activation(x);
+		float fx = x / (1.f + abs(x));
 		return fx * (1 - fx); }
 	case TANH:
 		return 1 - pow(tanh(x), 2);
@@ -68,57 +70,60 @@ float Node::DerivativeActivation(float x)
 	}
 }
 
-float Node::Error(float target)
+float Node::Backpropagate(float target)
 {
-	return 0.5f * pow(target - lastEval, 2);
-}
+	//fix the lock-out issue explained in slides
+	if (lastSum > 2.f)
+		lastSum = 2.f;
+	else if (lastSum < -2.f)
+		lastSum = -2.f;
 
-float Node::Backpropogate(float target)
-{
-	if (lastSum >= 2.f)
-		lastSum = 1.99999999999999999999f;
-	else if (lastSum <= -2.f)
-		lastSum = -1.99999999999999999999f;
+	//check if we are last layer
 	if (parent->next == NULL)
 	{
-		
+		//caluclate error, according to delta rule this is (t - j)
 		float targetwrtout = -(target - lastEval);
-		//float outwrtnet = lastEval * (1 - lastEval);
+		//calculate the derivative of the activator, according to delta rule this is g'(h)
 		float outwrtnet = DerivativeActivation(lastSum);
+		//calculate the node delta, just so we dont do it per neuron, this value is also stored as error
 		float nodeDelta = targetwrtout * outwrtnet;
+
 		for (int i = 0; i < numWeights; i++)
 		{
-			//how impactful was weight i - following the delta rule https://en.wikipedia.org/wiki/Delta_rule
+			//calculate the weights error, with the delta rule this is everything but the learning consant
 			float errorwrtweight = nodeDelta * parent->prev->nodes[i].lastEval;
+			//modify weights by the rest of the delta rule, aka the learning rate * weights error
 			weights[i] = weights[i] - LEARNING_RATE * errorwrtweight;
 		}
 
-
-		//do it for bias?
+		//same thing for bias as with weights, but ignore the weights error
 		bias = bias - LEARNING_RATE * nodeDelta;
 
+		//store the error for previous layers
 		error = nodeDelta;
+
 		return error;
 	}
 	else
 	{
-		//calculate this nodes error
-		error = 0;
-		for (int i = 0; i < parent->next->numNodes; i++)//error = summation(nodeDelta * connectionWeight)
-			error += parent->next->nodes[i].error * parent->next->nodes[i].weights[id];
+		//error calculation, the summation of the prior layers per neuron error multiplied by the inlfuence that neuron has on this neuron
+		float targetwrtout = 0;
+		for (int i = 0; i < parent->next->numNodes; i++)
+			targetwrtout += parent->next->nodes[i].error * parent->next->nodes[i].weights[id];
 
-		//float outwrtnet = lastEval * (1 - lastEval);
+		//the rest is the same as the input layer
 		float outwrtnet = DerivativeActivation(lastSum);
-		float nodeDelta = error * outwrtnet;
+		float nodeDelta = targetwrtout * outwrtnet;
 
 		for (int i = 0; i < numWeights; i++)
 		{
+			//except here, here if our neruons input was the actual input, aka layer 0, we use the actual input
 			float errorweight = nodeDelta * (parent->prev != NULL ? parent->prev->nodes[i].lastEval : parent->nn->lastInput[i]);
 			weights[i] = weights[i] - LEARNING_RATE * errorweight;
 		}
 
 
-		//do it for bias?
+		//do it for bias
 		bias = bias - LEARNING_RATE * nodeDelta;
 
 		error = nodeDelta;
@@ -135,11 +140,6 @@ char* ActivationFunctionString(ActivationFunction a)
 	case RELU:	return "ReLu";
 	default: return "ERR";
 	}
-}
-
-void Node::LogStructure(bool toFile, bool toConsole, FILE* file)
-{
-
 }
 
 void Node::LogState(int runId, bool toFile, bool toConsole, FILE* file)

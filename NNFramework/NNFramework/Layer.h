@@ -15,39 +15,41 @@ class Layer
 {
 public:
 	friend Node;
+
+	//constructor, never actually called manually, instead called by NeuralNetwork's constructor
 	Layer(int nodeCount, int numInputs,LayerType type, ActivationFunction activationFunction, int id, int* extraData);
 
-	//output values and numoutputs must be valid memroy
+	//output values and numoutputs must be valid allocated memory, it will be memcpy'd to
 	void Evaluate(float* inputs, int numInputs, float* outputValues, int* numOutputs);
-	void Backpropogate(float* target = nullptr);
+
+	//performs backpropagation on this layer, *target contains the target values for the final layer, or nullptr
+	void Backpropagate(float* target = nullptr);
 
 	int GetNumOutputs();
 	LayerType GetType();
-	void LogStructure(bool toFile, bool toConsole, FILE* file);
+
+	//log sate to file
 	void LogState(int runId, bool toFile, bool toConsole, FILE* file);
+
+	//sets each node's parent pointer to this
+	void ReLink();
+
+	//sets the weights and floats for node id
+	void SetNode(int id, std::vector<float> &weights, float bias);
+
+	//doublly linked list
 	Layer* prev;
 	Layer* next;
+	//parent network
 	NeuralNetwork* nn;
 
-	void ReLink()
-	{
-		for (int i = 0; i < numNodes; i++)
-			nodes[i].parent = this;
-	}
-
-	void SetNode(int id, std::vector<float> &weights, float bias)
-	{
-		nodes[id].bias = bias;
-		for (int i = 0, s = weights.size(); i < s; i++)
-		{
-			nodes[id].weights[i] = weights[i];
-		}
-	}
-
 private:
+	//id of this layer, aka layerId
 	int id;
+
+	//dynamic allocation node array
 	int numNodes;
 	Node* nodes;
-	//std::vector<Node> nodes;
+
 	LayerType layerType;
 };

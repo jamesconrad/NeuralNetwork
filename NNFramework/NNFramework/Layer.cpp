@@ -5,11 +5,13 @@ Layer::Layer(int nodeCount, int numInputs, LayerType type, ActivationFunction ac
 	id = idnum;
 	numNodes = nodeCount;
 	layerType = type;
+	
+	//allocate node array as we did with layer, ignoring constructor
 	nodes = (Node*) new char[nodeCount * sizeof(Node)];
-	//nodes.reserve(nodeCount);
+
 	for (int i = 0; i < numNodes; i++)
 	{
-		//nodes.push_back(Node(numInputs, this, activationFunction, i, extraData));
+		//set each node to a new node via constructor
 		nodes[i] = Node(numInputs, this, activationFunction, i, extraData);
 	}
 }
@@ -26,18 +28,37 @@ LayerType Layer::GetType()
 
 void Layer::Evaluate(float* inputs, int numInputs, float* outputValues, int* numOutputs)
 {
+	//simply set the output value at the nodeId's index to the nodes result
 	for (int i = 0; i < numNodes; i++)
 	{
 		outputValues[i] = nodes[i].Evaluate(inputs, numInputs);
 	}
+	//the numoutput return pointers value
 	*numOutputs = numNodes;
 }
 
-void Layer::Backpropogate(float* target)
+void Layer::Backpropagate(float* target)
 {
+	//simply call backpropagate on each node
 	for (int i = 0; i < numNodes; i++)
 	{
-		nodes[i].Backpropogate(target == nullptr ? 0 : target[i]);
+		nodes[i].Backpropagate(target == nullptr ? 0 : target[i]);
+	}
+}
+
+void Layer::ReLink()
+{
+	for (int i = 0; i < numNodes; i++)
+		nodes[i].parent = this;
+}
+
+void Layer::SetNode(int id, std::vector<float> &weights, float bias)
+{
+	//set each nodes values
+	nodes[id].bias = bias;
+	for (int i = 0, s = weights.size(); i < s; i++)
+	{
+		nodes[id].weights[i] = weights[i];
 	}
 }
 
@@ -49,11 +70,6 @@ char* LayerTypeString(LayerType t)
 	case FCL: return "FCL";
 	default: return "ERR";
 	}
-}
-
-void Layer::LogStructure(bool toFile, bool toConsole, FILE* file)
-{
-
 }
 
 void Layer::LogState(int runId, bool toFile, bool toConsole, FILE* file)
