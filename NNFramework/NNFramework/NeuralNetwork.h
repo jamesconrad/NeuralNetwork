@@ -22,6 +22,8 @@ public:
 	//Initlogging must have been called if toFile == true
 	void LogState(int runId, bool toFile, bool toConsole);
 
+	bool LoadStateLog(char* stateFilePath);
+
 	void ReLinkPointers()
 	{
 		for (int i = 0; i < numLayers; i++)

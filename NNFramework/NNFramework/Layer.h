@@ -35,6 +35,15 @@ public:
 			nodes[i].parent = this;
 	}
 
+	void SetNode(int id, std::vector<float> &weights, float bias)
+	{
+		nodes[id].bias = bias;
+		for (int i = 0, s = weights.size(); i < s; i++)
+		{
+			nodes[id].weights[i] = weights[i];
+		}
+	}
+
 private:
 	int id;
 	int numNodes;

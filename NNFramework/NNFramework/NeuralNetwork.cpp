@@ -2,6 +2,11 @@
 
 #include <memory> //memcpy
 
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <sstream>
+
 NeuralNetwork::NeuralNetwork(int layerCount, LayerType* layerTypes, int* nodeCounts, ActivationFunction* layerActivationFunctions, int numInputs, int* extraData)
 {
 	numLayers = layerCount;
@@ -96,6 +101,70 @@ void NeuralNetwork::CloseLogging()
 
 void NeuralNetwork::LogState(int runId, bool toFile, bool toConsole)
 {
-	for (int i = 1; i < numLayers; i++)
+	for (int i = 0; i < numLayers; i++)
 		layers[i]->LogState(runId, toFile, toConsole, stateLog);
+}
+
+bool NeuralNetwork::LoadStateLog(char* stateFilePath)
+{
+	std::ifstream csv(stateFilePath);
+	std::string line;
+	
+	std::getline(csv, line, '\n');
+
+	//fetch ines
+	while (csv.good())
+	{
+		std::stringstream ss(line);
+		
+		//logId
+		std::getline(csv, line, ',');
+
+		//layerId
+		std::getline(csv, line, ',');
+		int layerId = 0;
+		ss = std::stringstream(line);
+		ss >> layerId;
+
+		//layerType
+		std::getline(csv, line, ',');
+
+		//neuronId
+		std::getline(csv, line, ',');
+		int neuronId = 0;
+		ss = std::stringstream(line);
+		ss >> neuronId;
+
+		//activation
+		std::getline(csv, line, ',');
+
+		//lastValue
+		std::getline(csv, line, ',');
+		
+		//weight array
+		std::getline(csv, line, '[');
+		std::getline(csv, line, ']');
+		//line is currently a list of csv float values for weights
+		ss = std::stringstream(line);
+		std::vector<float> weights;
+		float val;
+		while (ss >> val)
+		{
+			weights.push_back(val);
+			if (ss.peek() == ',')
+				ss.ignore();
+		}
+		std::getline(csv, line, ',');
+
+		//bias
+		std::getline(csv, line, '\n');
+		float bias = 0;
+		ss = std::stringstream(line);
+		ss >> bias;
+
+		//apply node
+		layers[layerId]->SetNode(neuronId, weights, bias);
+	}
+
+	return true;
 }
