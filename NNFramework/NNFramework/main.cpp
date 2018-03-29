@@ -1,6 +1,7 @@
 #include "NeuralNetwork.h"
 
 #define TRAIN_FROM_SCRATCH true
+#define TRAINING_PASSES 1
 #define DATASET_FILEPATH "train-images.idx3-ubyte"
 #define LABELSET_FILEPATH "train-labels.idx1-ubyte"
 
@@ -38,84 +39,90 @@ void main()
 
 		if (TRAIN_FROM_SCRATCH)
 		{
-			FILE* dataset;
-			FILE* labels;
-			fopen_s(&dataset, DATASET_FILEPATH, "rb");
-			fopen_s(&labels, LABELSET_FILEPATH, "rb");
 
-			int resolution = 784;//we know the input is 28x28 and 60000 images
-
-			unsigned char image[1024];
-			float input[784];
-			float output[10];
-			unsigned char label;
-			fread_s(image, 784, sizeof(int), 4, dataset);	//set start points to file data
-			fread_s(image, 784, sizeof(int), 2, labels);	//set start points to file data
-			int correct = 0;
-			for (int i = 1; i <= 60000; i++)
+			for (int i = 0; i < TRAINING_PASSES; i++)
 			{
-				//load in number image and label
-				fread_s(image, 1024, 1, 784, dataset);
-				fread_s(&label, 1, 1, 1, labels);
-				//convert to 0-1
-				for (int j = 0; j < 784; j++)
-				{
-					input[j] = (float)image[j] / 255.0f;
-					//debug printing
-					//printf("%c", input[j] > 0.66f ? 178 : input[j] > 0.33f ? 177 : input[j] > 0.0f ? 176 : ' ');
-					//if (j % 28 == 0)
-					//	printf("\n");
-				}
+				FILE* dataset;
+				FILE* labels;
+				fopen_s(&dataset, DATASET_FILEPATH, "rb");
+				fopen_s(&labels, LABELSET_FILEPATH, "rb");
 
+				int resolution = 784;//we know the input is 28x28 and 60000 images
 
-				//Evaluate network using inputs
-				nn.Evaluate(input, 784, output);
-	
-				//check output
-				float max = output[0];
-				char prediction = 0;
-				for (int j = 0; j < 10; j++)
+				unsigned char image[1024];
+				float input[784];
+				float output[10];
+				unsigned char label;
+				fread_s(image, 784, sizeof(int), 4, dataset);	//set start points to file data
+				fread_s(image, 784, sizeof(int), 2, labels);	//set start points to file data
+				int correct = 0;
+				for (int i = 1; i <= 60000; i++)
 				{
-					if (output[j] > max)
+					//load in number image and label
+					fread_s(image, 1024, 1, 784, dataset);
+					fread_s(&label, 1, 1, 1, labels);
+					//convert to 0-1
+					for (int j = 0; j < 784; j++)
 					{
-						max = output[j];
-						prediction = j;
+						input[j] = (float)image[j] / 255.0f;
+						//debug printing
+						//printf("%c", input[j] > 0.66f ? 178 : input[j] > 0.33f ? 177 : input[j] > 0.0f ? 176 : ' ');
+						//if (j % 28 == 0)
+						//	printf("\n");
 					}
+
+
+					//Evaluate network using inputs
+					nn.Evaluate(input, 784, output);
+
+					//check output
+					float max = output[0];
+					char prediction = 0;
+					for (int j = 0; j < 10; j++)
+					{
+						if (output[j] > max)
+						{
+							max = output[j];
+							prediction = j;
+						}
+					}
+
+					//log evaluation stats to console
+					printf("%5i/60000 : %.4f%%  %c:%c  ", i, (float)i / 60000.0f * 100, '0' + prediction, '0' + label);
+					if (label == prediction)
+					{
+						printf("Correct   ");
+						if (i >= 60000 - 60000 / 10) correct++;//store correct ammount for pct
+					}
+					else
+						printf("Incorrect ");
+
+					//display final layers output
+					printf("[%-+.3f, ", output[0]);
+					for (int i = 1; i < 9; i++)
+						printf("%-+.3f, ", output[i]);
+					printf("%-+.3f]\n", output[9]);
+
+					//create target array
+					float actualResult[10] = { 0.1f,0.1f,0.1f,0.1f,0.1f,0.1f,0.1f,0.1f,0.1f,0.1f };
+					actualResult[label] = 0.9f;
+
+					//backpropogate
+					nn.BackProp(actualResult);
+					//if (i % 500 == 0)
+					//	nn.LogState(i, false, true);
 				}
 
-				//log evaluation stats to console
-				printf("%5i/60000 : %.4f%%  %c:%c  ", i, (float)i / 60000.0f * 100, '0' + prediction, '0' + label);
-				if (label == prediction)
-				{
-					printf("Correct   ");
-					if (i >= 60000 - 60000 / 10) correct++;//store correct ammount for pct
-				}
-				else
-					printf("Incorrect ");
-
-				//display final layers output
-				printf("[%-+.3f, ", output[0]);
-				for (int i = 1; i < 9; i++)
-					printf("%-+.3f, ", output[i]);
-				printf("%-+.3f]\n", output[9]);
-
-				//create target array
-				float actualResult[10] = { 0.1f,0.1f,0.1f,0.1f,0.1f,0.1f,0.1f,0.1f,0.1f,0.1f };
-				actualResult[label] = 0.9f;
-
-				//backpropogate
-				nn.BackProp(actualResult);
-				//if (i % 500 == 0)
-				//	nn.LogState(i, false, true);
+				//output accuracy to console
+				printf("Training Complete! Final 10%% accuracy %g%%\n", correct / 6000.f * 100.f);
+				fclose(dataset);
+				fclose(labels);
+				//log to file to load
+				nn.InitLogging("nnstatelog.csv");
+				nn.LogState(60000, true, false);
+				nn.CloseLogging();
+				printf("Begining next training session...\n");
 			}
-
-			//output accuracy to console
-			printf("Training Complete! Final 10%% accuracy %g%%\n", correct / 6000.f * 100.f);
-			//log to file to load
-			nn.InitLogging("nnstatelog.csv");
-			nn.LogState(60000, true, false);
-			nn.CloseLogging();
-			printf("Exiting...\n");
 		}
 	}
 	else
